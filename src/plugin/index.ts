@@ -3,9 +3,6 @@ import * as board from "../figma";
 
 export const generate = async (type: GenerateType) => {
   let code = "";
-
-  // console.log(board.getSelectedReactNode().getTree())
-  // return 
   switch (type) {
     case GenerateType.SELECTED:
       code = await board.getSelectedReactNode().createComponent();

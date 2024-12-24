@@ -1,5 +1,6 @@
 import { FigmaNode } from "../../figma/nodes";
 import { ImageProps, ImportType, TextProps, Tree } from "../../figma/types";
+import { generateSVGCode } from "./react-native-svg";
 
 export const createStyleSheetArray = (tree: Tree) => {
   let styles = [{ id: tree.node.id, style: tree.node.styles }];
@@ -43,6 +44,8 @@ const createJSXNode = (tree: Tree) => {
 
     case "Button":
       return createGroup(tree, "TouchableOpacity");
+    case "Icon":
+      return generateSVGCode(tree.node);
     default:
       return createGroup(tree, "View");
   }
@@ -65,6 +68,7 @@ export class ReactNativeNode extends FigmaNode {
 
   private createImports() {
     const imports = getImports(this.getTree());
+    
     const groupedImports = imports.reduce((acc, cur) => {
       if (!acc[cur.from]) {
         acc[cur.from] = [];
@@ -76,12 +80,16 @@ export class ReactNativeNode extends FigmaNode {
     const otherImports = Object.keys(groupedImports)
       .filter((k) => k !== "react-native")
       .map((k) => {
-        return `import { ${groupedImports[k].join(", ")} } from '${k}';`;
+        return `import ${groupedImports[k].join(", ")} from '${k}';`;
       });
+      
 
-    return `import { View, StyleSheet, ${groupedImports["react-native"].join(
+    const nativeImports = (groupedImports["react-native"] ?? []).join(
       ", "
-    )} } from 'react-native';\nimport React from 'react';\n
+    )
+
+    console.log(nativeImports)
+    return `import { View, StyleSheet, ${nativeImports} } from 'react-native';\nimport React from 'react';\n
     ${otherImports.join("\n")}
     `;
   }
@@ -102,7 +110,7 @@ export class ReactNativeNode extends FigmaNode {
   }
 
   private createStylesheet() {
-    const array = createStyleSheetArray(this.getTree());
+    const array = createStyleSheetArray(this.getTree()) ?? [];
     const styles = {};
     for (const style of array) {
       styles[style.id] = style.style;
