@@ -59,6 +59,7 @@
     }
   },
   "dependencies": {
+    "@figma-plugin/helpers": "^0.15.2",
     "@monaco-editor/react": "^4.6.0",
     "code-block-writer": "^13.0.3",
     "dotenv": "^16.4.7",
