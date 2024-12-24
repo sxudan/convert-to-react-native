@@ -32,7 +32,7 @@ export const crawl = async (node: SceneNode): Promise<CustomNode> => {
         info,
       };
     case "VECTOR":
-      return { node, info: {...info, vectorData: (node as VectorNode).vectorPaths} };
+      return { node, info: info };
     case "INSTANCE":
       return {
         node,

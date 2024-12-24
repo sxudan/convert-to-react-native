@@ -16,7 +16,7 @@ export async function generateCode(raw: string): Promise<string> {
           messages: [
             {
               role: "user",
-              content: `Generate React Native typescript code with this DSL. Only provide the code, no explanation.:\n\n${raw}`,
+              content: `Generate React Native typescript code with this DSL. Please refactor the code and fix the unwanted hierarchy as possible. I want to display the exact code to the user so prevent unwanted text. Detect where to use button, image, svg. I also dont want language indicator "tsx or java" in the code. Only provide the code, no explanation, :\n\n${raw}`,
             },
           ],
           temperature: 0.7,

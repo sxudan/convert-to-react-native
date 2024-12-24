@@ -8,7 +8,7 @@ export interface CodeProps {
 const Code: React.FC<CodeProps> = ({ code }) => {
   return (
     <div>
-      <Editor value={code} />
+      <Editor language="typescript" value={code} />
     </div>
   );
 };

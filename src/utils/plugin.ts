@@ -1,9 +1,11 @@
 import { generateCode } from "./gpt";
 import { crawl } from "./parser";
 
-export function showCode() {
-  const selectedNode = figma.currentPage.selection[0] as InstanceNode;
-  crawl(selectedNode).then(async (node) => {
+export async function showCode() {
+  figma.notify("Generating code...");
+  const target = figma.currentPage;
+  const selected = target.selection[0];
+  crawl(selected).then(async (node) => {
     figma.ui.postMessage({ type: "loading-code" });
     const code = await generateCode(JSON.stringify(node));
     figma.ui.postMessage({
