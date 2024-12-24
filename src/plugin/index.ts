@@ -1,11 +1,11 @@
 import { GenerateType } from "./types";
 import * as board from "../figma";
 
-export const generate = (type: GenerateType) => {
+export const generate = async (type: GenerateType) => {
   let code = "";
   switch (type) {
     case GenerateType.SELECTED:
-      code = board.getSelectedReactNode().createComponent();
+      code = await board.getSelectedReactNode().createComponent();
       break;
     case GenerateType.PAGE:
       break;

@@ -1,5 +1,7 @@
+import { config } from "../../config";
 import { FigmaNode } from "../../figma/nodes";
 import { ImageProps, ImportType, TextProps, Tree } from "../../figma/types";
+import { format } from "prettier";
 
 export const createStyleSheetArray = (tree: Tree) => {
   let styles = [{ id: tree.node.id, style: tree.node.styles }];
@@ -83,11 +85,11 @@ export class ReactNativeNode extends FigmaNode {
       ", "
     )} } from 'react-native';\n
     import React from 'react';\n
-    ${otherImports.join("\n")}
+    ${otherImports.join(";\n")}
     `;
   }
 
-  createComponent() {
+  async createComponent() {
     const imports = this.createImports();
     const body = `const ${this.getName()} = () => {
             return (
@@ -98,7 +100,10 @@ export class ReactNativeNode extends FigmaNode {
         }`;
     const stylesheet = this.createStylesheet();
     const exportStr = `export default ${this.getName()};`;
-    return `${imports}\n${body}\n${stylesheet}\n\n${exportStr}`;
+    return await format(
+      `${imports}\n${body}\n${stylesheet}\n\n${exportStr}`,
+      config.prettierConfig
+    );
   }
 
   private createStylesheet() {

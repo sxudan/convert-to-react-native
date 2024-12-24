@@ -6,7 +6,7 @@ import { GenerateType } from './plugin/types';
   figma.showUI(__html__, options);
   
   figma.on('run', async () => {
-    plugin.generate(GenerateType.SELECTED);
+    await plugin.generate(GenerateType.SELECTED);
   })
 
 })();
