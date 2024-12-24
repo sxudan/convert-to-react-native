@@ -6,7 +6,7 @@ import * as plugin from './utils/plugin';
   figma.showUI(__html__, options);
   
   figma.on('run', async () => {
-    await plugin.showCode();
+    // await plugin.showCode();
   })
 
 })();
