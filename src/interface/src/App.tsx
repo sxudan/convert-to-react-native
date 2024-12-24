@@ -33,7 +33,11 @@ function App() {
   return (
     <div>
       <TabBar />
-      {isLoading ? <p>Loading...</p> : <Code code={code} />}
+      {isLoading ? (
+        <p className="underline">Loading...</p>
+      ) : (
+        <Code code={code} />
+      )}
     </div>
   );
 }

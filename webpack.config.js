@@ -1,5 +1,7 @@
 const HtmlInlineScriptPlugin = require("html-inline-script-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const HTMLInlineCSSWebpackPlugin =
+  require("html-inline-css-webpack-plugin").default;
 
 const path = require("path");
 const webpack = require("webpack");
@@ -28,7 +30,7 @@ module.exports = (env, argv) => ({
       // Enables including CSS by doing "import './file.css'" in your TypeScript code
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "css-loader", "postcss-loader"],
       },
       // Allows you to use "<%= require('./file.svg') %>" in your HTML code to get a data URI
       // { test: /\.(png|jpg|gif|webp|svg|zip)$/, loader: [{ loader: 'url-loader' }] }
@@ -70,5 +72,6 @@ module.exports = (env, argv) => ({
       htmlMatchPattern: [/ui.html/],
       scriptMatchPattern: [/.js$/],
     }),
+    new HTMLInlineCSSWebpackPlugin(),
   ],
 });
