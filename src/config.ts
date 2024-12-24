@@ -6,6 +6,7 @@ export const config = {
         parser: 'typescript', // Specify the parser (e.g., "babel", "typescript", "html", etc.)
         semi: true,
         singleQuote: true,
-        trailingComma: "all",
+        trailingComma: 'es5',
+        tabWidth: 4,
       } as Options
 }

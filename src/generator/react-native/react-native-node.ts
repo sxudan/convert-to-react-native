@@ -1,7 +1,5 @@
-import { config } from "../../config";
 import { FigmaNode } from "../../figma/nodes";
 import { ImageProps, ImportType, TextProps, Tree } from "../../figma/types";
-import { format } from "prettier";
 
 export const createStyleSheetArray = (tree: Tree) => {
   let styles = [{ id: tree.node.id, style: tree.node.styles }];
@@ -24,9 +22,9 @@ const createJSXNode = (tree: Tree) => {
       const node = createJSXNode(child);
       views.push(node);
     }
-    return `<${tag} style={styles.${group.node.id}}>${views.join(
+    return `<${tag} style={styles.${group.node.id}}>\n${views.join(
       "\n"
-    )}</${tag}>`;
+    )}\n</${tag}>\n`;
   };
 
   switch (tree.node.type) {
@@ -34,14 +32,14 @@ const createJSXNode = (tree: Tree) => {
       // eslint-disable-next-line no-case-declarations
       const imageProps = tree.node.props as ImageProps;
       return `<Image
-                          style={styles.${tree.node.id}}
-                          source={require('${imageProps.src}')}
-                          resizeMode={'${imageProps.resizeMode}'}
-                      />`;
+                  style={styles.${tree.node.id}}
+                  source={require('${imageProps.src}')}
+                  resizeMode={'${imageProps.resizeMode}'}
+              />\n`;
     case "Text":
       // eslint-disable-next-line no-case-declarations
       const textProps = tree.node.props as TextProps;
-      return `<Text style={styles.${tree.node.id}}>{'${textProps.text}'}</Text>`;
+      return `<Text style={styles.${tree.node.id}}>{'${textProps.text}'}</Text>\n`;
 
     case "Button":
       return createGroup(tree, "TouchableOpacity");
@@ -78,14 +76,13 @@ export class ReactNativeNode extends FigmaNode {
     const otherImports = Object.keys(groupedImports)
       .filter((k) => k !== "react-native")
       .map((k) => {
-        return `import { ${groupedImports[k].join(", ")} } from '${k}'`;
+        return `import { ${groupedImports[k].join(", ")} } from '${k}';`;
       });
 
     return `import { View, StyleSheet, ${groupedImports["react-native"].join(
       ", "
-    )} } from 'react-native';\n
-    import React from 'react';\n
-    ${otherImports.join(";\n")}
+    )} } from 'react-native';\nimport React from 'react';\n
+    ${otherImports.join("\n")}
     `;
   }
 
@@ -96,14 +93,12 @@ export class ReactNativeNode extends FigmaNode {
                 <View>
                     ${this.createJSXNodes()}
                 </View>
-            )
+            );
         }`;
     const stylesheet = this.createStylesheet();
     const exportStr = `export default ${this.getName()};`;
-    return await format(
-      `${imports}\n${body}\n${stylesheet}\n\n${exportStr}`,
-      config.prettierConfig
-    );
+    const code = `${imports}\n${body}\n\n${stylesheet}\n\n${exportStr}`;
+    return code;
   }
 
   private createStylesheet() {
@@ -113,9 +108,7 @@ export class ReactNativeNode extends FigmaNode {
       styles[style.id] = style.style;
     }
 
-    const stylesString = `const styles = StyleSheet.create(
-        ${JSON.stringify(styles, null, 2)}
-        )`;
+    const stylesString = `const styles = StyleSheet.create(${JSON.stringify(styles, null, 2)});\n`;
     return stylesString;
   }
 }
