@@ -1,4 +1,4 @@
-export interface Position {
+export interface Dimension {
   x: number;
   y: number;
   width: number;
@@ -76,14 +76,19 @@ export interface ImageProps {
 
 export interface TextProps { text: string }
 
+export interface VectorProps {
+  fill: string;
+}
+
 export interface DSL {
   id: string;
   name: string;
   type: ComponentType;
-  position: Position;
+  dimension: Dimension;
   styles: Appearance & Partial<TypographyStyles> & Partial<DimensionStyles>;
   props: { [key: string]: any };
   imports: ImportType[];
+  vectorData?: VectorPaths;
 }
 
 export interface Tree {

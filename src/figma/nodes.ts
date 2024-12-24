@@ -6,11 +6,12 @@ import {
   ImageProps,
   ImportType,
   mappedNodeType,
-  Position,
+  Dimension,
   TextProps,
   Tree,
   TypographyStyles,
   TypographyStylesTextStyles,
+  VectorProps,
 } from "./types";
 
 function appearance(node: SceneNode): Appearance {
@@ -175,6 +176,30 @@ function alignment(node: SceneNode) {
   }
 }
 
+function getVectorProperties(node: SceneNode) {
+  let vecNode = node;
+  let props: VectorProps = {
+    fill: '#000'
+  };
+
+  if (node.isAsset && node.type === "FRAME") {
+    vecNode = node.children.filter(child => child.type === 'VECTOR')[0];
+    const styles = new FigmaNode(vecNode).getAppearance();
+    props = {
+      fill: styles.backgroundColor
+    }
+  }
+
+  if (vecNode.type === "VECTOR") {
+    const vectorData = vecNode.vectorPaths;
+    return {
+      vectorData,
+      props
+    };
+  }
+  return null;
+}
+
 function imageProperties(node: SceneNode) {
   if ("fills" in node && Array.isArray(node.fills) && node.fills.length > 0) {
     let fill = node.fills[0] as Paint;
@@ -305,7 +330,7 @@ export class FigmaNode {
     return "children" in this.node ? this.node.children.length === 0 : true;
   }
 
-  getPosition(): Position {
+  getDimension(): Dimension {
     return {
       x: this.node.x,
       y: this.node.y,
@@ -315,6 +340,9 @@ export class FigmaNode {
   }
 
   getChildren(): FigmaNode[] {
+    if (this.getComponentType() === "Icon") {
+      return [];
+    }
     if ("children" in this.node) {
       return this.node.children.map((child) => new FigmaNode(child));
     }
@@ -326,13 +354,13 @@ export class FigmaNode {
       children: null,
       node: this.generateDSL(),
     };
-    if (!this.isLeafNode()) {
+    if (!this.isLeafNode() && this.getComponentType() !== "Icon") {
       for (const child of this.getChildren()) {
         if (tree.children === null) {
           tree.children = [];
         }
         tree.children.push({
-          children: child.isLeafNode() ? null : child.getTree(),
+          children: child.isLeafNode() || child.getComponentType() === 'Icon' ? null : child.getTree(),
           node: child.generateDSL(),
         });
       }
@@ -356,6 +384,13 @@ export class FigmaNode {
       }
     }
 
+    if (this.node.isAsset && this.node.type === 'FRAME') {
+      const hasVector = this.node.children.some(child => child.type === 'VECTOR');
+      if (hasVector) {
+        return 'Icon';
+      }
+    }
+
     if (this.node.name.toLowerCase().includes("button")) {
       return "Button";
     }
@@ -374,10 +409,11 @@ export class FigmaNode {
     const type = this.getComponentType();
     const name = this.getName();
     const appearance = this.getAppearance();
-    const position = this.getPosition();
+    const dimension = this.getDimension();
     const id = this.getId();
     const props = {};
     const imports: ImportType[] = [];
+    const vectorData = null;
 
     const dsl = {
       id,
@@ -386,9 +422,10 @@ export class FigmaNode {
       styles: {
         ...appearance,
       },
-      position,
+      dimension,
       props,
       imports,
+      vectorData,
     };
 
     if (type === "Image") {
@@ -430,14 +467,28 @@ export class FigmaNode {
         ...dsl,
         styles: {
           ...dsl.styles,
-          height: dsl.position.height,
-          width: dsl.position.width,
+          height: dsl.dimension.height,
+          width: dsl.dimension.width,
         },
         imports: [
             ...dsl.imports,
             { name: "TouchableOpacity", from: "react-native" },
-        ]
+        ],
       };
+    } else if (type === 'Icon') {
+      const { vectorData, props } = getVectorProperties(this.node);
+      return {
+        ...dsl,
+        vectorData: vectorData,
+        imports: [
+          ...dsl.imports,
+          {name: 'Svg, { Path }', from: 'react-native-svg'}
+        ],
+        props: {
+          ...dsl.props,
+          ...props
+        },
+      }
     }
 
     return dsl;
