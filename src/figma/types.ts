@@ -23,6 +23,7 @@ export const mappedNodeType: { [key in ComponentType]?: NodeType[] } = {
     "STAR",
     "COMPONENT",
     "INSTANCE",
+    "GROUP",
   ],
   ["Text"]: ["TEXT"],
   Icon: ["VECTOR"],

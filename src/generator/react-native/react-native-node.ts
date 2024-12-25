@@ -1,5 +1,5 @@
 import { FigmaNode } from "../../figma/nodes";
-import { ImageProps, ImportType, TextProps, Tree } from "../../figma/types";
+import { ImageProps, TextProps, Tree } from "../../figma/types";
 import { generateSVGCode } from "./react-native-svg";
 
 export const createStyleSheetArray = (tree: Tree) => {
@@ -51,11 +51,13 @@ const createJSXNode = (tree: Tree) => {
   }
 };
 
-function getImports(tree: Tree): ImportType[] {
+function getImports(tree: Tree) {
   let imports = tree.node.imports ?? [];
   if (tree.children) {
     for (const child of tree.children) {
-      imports = [...imports, ...getImports(child)];
+      const childImports = Array.from(getImports(child));
+      imports = Array.from(new Set([...imports, ...childImports]));
+      console.log('imports', imports)
     }
   }
   return imports;

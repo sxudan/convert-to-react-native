@@ -87,7 +87,7 @@ function appearance(node: SceneNode): Appearance {
     value.borderBottomRightRadius = node.bottomRightRadius;
   }
 
-  if ("fills" in node && Array.isArray(node.fills) && node.fills.length > 0) {
+  if (node.type !== 'TEXT' && node.type !== 'VECTOR' && "fills" in node && Array.isArray(node.fills) && node.fills.length > 0) {
     const fill = node.fills[0] as Paint;
     if (fill.type === "SOLID" && fill.visible) {
       value.backgroundColor = colorToHex(fill.color, fill.opacity);
@@ -384,7 +384,7 @@ export class FigmaNode {
           children:
             child.isLeafNode() || child.getComponentType() === "Icon"
               ? null
-              : child.getTree(),
+              : [child.getTree()],
           node: child.generateDSL(),
         });
       }
