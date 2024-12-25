@@ -29,9 +29,13 @@ export const mappedNodeType: { [key in ComponentType]?: NodeType[] } = {
   Input: ["BOOLEAN_OPERATION"],
 };
 
-export interface Appearance {
+export interface Appearance extends DimensionStyles {
   opacity?: number;
   borderRadius?: number;
+  borderTopLeftRadius?: number;
+  borderTopRightRadius?: number;
+  borderBottomLeftRadius?: number;
+  borderBottomRightRadius?: number;
   backgroundColor?: string;
   borderColor?: string;
   borderWidth?: number;
@@ -41,10 +45,11 @@ export interface Appearance {
   borderLeftWidth?: number;
   borderStyle?: string;
   shadowColor?: string;
-  shadowOffset?: { x: number; y: number };
+  shadowOffset?: { width: number; height: number };
   shadowOpacity?: number;
   shadowRadius?: number;
   elevation?: number;
+  position?: "absolute" | "relative";
 }
 
 export type TypographyStylesTextStyles =
@@ -65,8 +70,8 @@ export interface TypographyStyles {
 }
 
 export interface DimensionStyles {
-    width: number;
-    height: number;
+    width?: number | string;
+    height?: number | string;
 }
 
 export interface ImageProps {
@@ -80,12 +85,17 @@ export interface VectorProps {
   fill: string;
 }
 
+export interface AlignmentStyles {
+  justifyContent: "center" | "flex-start" | "flex-end" | "space-between" | "space-around";
+  alignItems: "center" | "flex-start" | "flex-end" | "stretch";
+}
+
 export interface DSL {
   id: string;
   name: string;
   type: ComponentType;
   dimension: Dimension;
-  styles: Appearance & Partial<TypographyStyles> & Partial<DimensionStyles>;
+  styles: Appearance & Partial<TypographyStyles> & Partial<DimensionStyles> & Partial<AlignmentStyles>;
   props: { [key: string]: any };
   imports: ImportType[];
   vectorData?: VectorPaths;

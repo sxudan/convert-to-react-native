@@ -15,7 +15,7 @@ import {
 } from "./types";
 
 function appearance(node: SceneNode): Appearance {
-  const value = {
+  const value: Appearance= {
     opacity: undefined,
     borderRadius: undefined,
     // >>>>>> border
@@ -39,7 +39,22 @@ function appearance(node: SceneNode): Appearance {
     shadowRadius: undefined,
     // Android Shadow
     elevation: undefined,
+    // dimention
+    position: undefined,
+    width: undefined,
+    height: undefined
   };
+
+  if (node.parent && node.parent.type !== "PAGE") {
+    if (
+      node.width === (node.parent as SceneNode).width &&
+      node.height === (node.parent as SceneNode).height
+    ) {
+      value.position = "absolute";
+      value.width = '100%';
+      value.height = '100%';
+    }
+  }
 
   if ("opacity" in node) {
     value.opacity = node.opacity;
@@ -50,6 +65,10 @@ function appearance(node: SceneNode): Appearance {
       typeof node.cornerRadius === "number"
         ? Number(node.cornerRadius)
         : undefined;
+
+    if (node.type === "ELLIPSE") {
+      value.borderRadius = node.width / 2;
+    }
   }
 
   if ("topLeftRadius" in node) {
@@ -110,6 +129,8 @@ function appearance(node: SceneNode): Appearance {
     if ("dashPattern" in node) {
       value.borderStyle = node.dashPattern.length > 0 ? "dashed" : "solid";
     }
+
+
   }
 
   if (
@@ -179,22 +200,22 @@ function alignment(node: SceneNode) {
 function getVectorProperties(node: SceneNode) {
   let vecNode = node;
   let props: VectorProps = {
-    fill: '#000'
+    fill: "#000",
   };
 
   if (node.isAsset && node.type === "FRAME") {
-    vecNode = node.children.filter(child => child.type === 'VECTOR')[0];
+    vecNode = node.children.filter((child) => child.type === "VECTOR")[0];
     const styles = new FigmaNode(vecNode).getAppearance();
     props = {
-      fill: styles.backgroundColor
-    }
+      fill: styles.backgroundColor,
+    };
   }
 
   if (vecNode.type === "VECTOR") {
     const vectorData = vecNode.vectorPaths;
     return {
       vectorData,
-      props
+      props,
     };
   }
   return null;
@@ -251,14 +272,14 @@ function typography(node: SceneNode): {
       lineHeight.unit === "PIXELS"
         ? lineHeight.value
         : lineHeight.unit === "PERCENT"
-        ? fontSize * lineHeight.value
-        : undefined;
+          ? fontSize * lineHeight.value
+          : undefined;
     const letterSpacingValue =
       letterSpacing.unit === "PIXELS"
         ? letterSpacing.value
         : letterSpacing.unit === "PERCENT"
-        ? fontSize * letterSpacing.value
-        : undefined;
+          ? fontSize * letterSpacing.value
+          : undefined;
     const fontWeight =
       typeof node.fontWeight === "number" ? node.fontWeight : undefined;
 
@@ -360,7 +381,10 @@ export class FigmaNode {
           tree.children = [];
         }
         tree.children.push({
-          children: child.isLeafNode() || child.getComponentType() === 'Icon' ? null : child.getTree(),
+          children:
+            child.isLeafNode() || child.getComponentType() === "Icon"
+              ? null
+              : child.getTree(),
           node: child.generateDSL(),
         });
       }
@@ -384,10 +408,12 @@ export class FigmaNode {
       }
     }
 
-    if (this.node.isAsset && this.node.type === 'FRAME') {
-      const hasVector = this.node.children.some(child => child.type === 'VECTOR');
+    if (this.node.isAsset && this.node.type === "FRAME") {
+      const hasVector = this.node.children.some(
+        (child) => child.type === "VECTOR"
+      );
       if (hasVector) {
-        return 'Icon';
+        return "Icon";
       }
     }
 
@@ -401,7 +427,7 @@ export class FigmaNode {
     return type;
   }
 
-  getAppearance() {
+  getAppearance(): Appearance {
     return appearance(this.node);
   }
 
@@ -440,10 +466,7 @@ export class FigmaNode {
           ...dsl.props,
           ...imagePropery.props,
         },
-        imports: [
-            ...dsl.imports,
-            { name: "Image", from: "react-native" },
-        ],
+        imports: [...dsl.imports, { name: "Image", from: "react-native" }],
       };
     } else if (type === "Text") {
       const textProp = typography(this.node);
@@ -457,10 +480,7 @@ export class FigmaNode {
           ...dsl.props,
           ...textProp.props,
         },
-        imports: [
-            ...dsl.imports,
-            { name: "Text", from: "react-native" },
-        ],
+        imports: [...dsl.imports, { name: "Text", from: "react-native" }],
       };
     } else if (type === "Button") {
       return {
@@ -469,26 +489,28 @@ export class FigmaNode {
           ...dsl.styles,
           height: dsl.dimension.height,
           width: dsl.dimension.width,
+          justifyContent: "center",
+          alignItems: "center",
         },
         imports: [
-            ...dsl.imports,
-            { name: "TouchableOpacity", from: "react-native" },
+          ...dsl.imports,
+          { name: "TouchableOpacity", from: "react-native" },
         ],
       };
-    } else if (type === 'Icon') {
+    } else if (type === "Icon") {
       const { vectorData, props } = getVectorProperties(this.node);
       return {
         ...dsl,
         vectorData: vectorData,
         imports: [
           ...dsl.imports,
-          {name: 'Svg, { Path }', from: 'react-native-svg'}
+          { name: "Svg, { Path }", from: "react-native-svg" },
         ],
         props: {
           ...dsl.props,
-          ...props
+          ...props,
         },
-      }
+      };
     }
 
     return dsl;
