@@ -14,8 +14,117 @@ import {
   VectorProps,
 } from "./types";
 
+export function createUpdatedSceneNode(node: SceneNode): SceneNode {
+  if ('children' in node === false) {
+    return node;
+  }
+  // Create a new frame to hold the updated structure
+  const newFrame = figma.createFrame();
+  newFrame.resizeWithoutConstraints(1000, 1000); // Set default size, can be adjusted as needed
+  newFrame.name = `${node.name}_UpdatedStructure`;
+
+  // Collect all children of the provided node and group them into rows
+  const groupedRows: SceneNode[][] = groupIntoRows(node);
+
+  // Offset for arranging rows
+  let yOffset = 0;
+
+  groupedRows.forEach((row, rowIndex) => {
+    // Clone each node in the row
+    const clonedRow = row.map((childNode) => {
+      const clonedNode = childNode.clone();
+      // Adjust parent structure of the cloned node
+      figma.currentPage.appendChild(createUpdatedSceneNode(clonedNode));
+      return clonedNode;
+    });
+
+    if (clonedRow.length === 1) {
+      const r = clonedRow[0];
+      r.name = `Row_${rowIndex + 1}${r.id}`;
+      newFrame.appendChild(r);
+    } else {
+      // // Group the cloned row
+      const rowGroup = figma.group(clonedRow, figma.currentPage);
+      rowGroup.name = `Row_${rowIndex + 1}`;
+      rowGroup.x = 0; // Align all rows to the left
+      rowGroup.y = yOffset; // Position rows sequentially
+
+      // Update offset for the next row
+      yOffset += rowGroup.height + 20; // Add 20px spacing between rows
+
+      // Append the grouped row to the new frame
+      newFrame.appendChild(rowGroup);
+    }
+  });
+
+  return newFrame;
+}
+
+/**
+ * Groups the children of a node into rows based on their Y-coordinates.
+ */
+
+function groupIntoRows(parentNode: SceneNode): SceneNode[][] {
+  if (!("children" in parentNode)) {
+    return [];
+  }
+
+  // Clone and sort children by `y` to group rows vertically
+  const children = parentNode.children.map((child) => child.clone()).sort((a, b) => a.y - b.y);
+
+  const rows: SceneNode[][] = [];
+  const rowThreshold = 10; // Threshold for determining a new row
+
+  let currentRow: SceneNode[] = [];
+  let previousY = children[0]?.y ?? 0;
+
+  children.forEach((child) => {
+    const childY = child.y;
+
+    // Start a new row if `y` difference exceeds the threshold
+    if (Math.abs(childY - previousY) > rowThreshold) {
+      // Sort the current row based on `x` before pushing
+      currentRow.sort((a, b) => a.x - b.x);
+      rows.push(currentRow);
+
+      currentRow = [];
+    }
+
+    // Add the child to the current row
+    currentRow.push(child);
+    previousY = childY;
+  });
+
+  // Add the last row if not empty
+  if (currentRow.length > 0) {
+    currentRow.sort((a, b) => a.x - b.x); // Sort the last row based on `x`
+    rows.push(currentRow);
+  }
+
+  // Ensure no overlapping within each row
+  rows.forEach((row) => {
+    let previousChild: SceneNode | null = null;
+
+    row.forEach((child) => {
+      if (previousChild && "x" in previousChild && "width" in previousChild) {
+        const previousX = previousChild.x;
+        const previousWidth = "width" in previousChild ? previousChild.width : 0;
+
+        // Adjust the current child's position if overlapping
+        if ("x" in child && child.x < previousX + previousWidth) {
+          child.x = previousX + previousWidth + 10; // Add 10px spacing
+        }
+      }
+
+      previousChild = child;
+    });
+  });
+
+  return rows;
+}
+
 function appearance(node: SceneNode): Appearance {
-  const value: Appearance= {
+  const value: Appearance = {
     opacity: undefined,
     borderRadius: undefined,
     // >>>>>> border
@@ -42,7 +151,7 @@ function appearance(node: SceneNode): Appearance {
     // dimention
     position: undefined,
     width: undefined,
-    height: undefined
+    height: undefined,
   };
 
   if (node.parent && node.parent.type !== "PAGE") {
@@ -51,9 +160,13 @@ function appearance(node: SceneNode): Appearance {
       node.height === (node.parent as SceneNode).height
     ) {
       value.position = "absolute";
-      value.width = '100%';
-      value.height = '100%';
+      value.width = "100%";
+      value.height = "100%";
     }
+  }
+
+  if (node.name.toLowerCase().includes("row")) {
+    value.flexDirection = "row";
   }
 
   if ("opacity" in node) {
@@ -87,7 +200,13 @@ function appearance(node: SceneNode): Appearance {
     value.borderBottomRightRadius = node.bottomRightRadius;
   }
 
-  if (node.type !== 'TEXT' && node.type !== 'VECTOR' && "fills" in node && Array.isArray(node.fills) && node.fills.length > 0) {
+  if (
+    node.type !== "TEXT" &&
+    node.type !== "VECTOR" &&
+    "fills" in node &&
+    Array.isArray(node.fills) &&
+    node.fills.length > 0
+  ) {
     const fill = node.fills[0] as Paint;
     if (fill.type === "SOLID" && fill.visible) {
       value.backgroundColor = colorToHex(fill.color, fill.opacity);
@@ -129,8 +248,6 @@ function appearance(node: SceneNode): Appearance {
     if ("dashPattern" in node) {
       value.borderStyle = node.dashPattern.length > 0 ? "dashed" : "solid";
     }
-
-
   }
 
   if (
@@ -375,6 +492,7 @@ export class FigmaNode {
       children: null,
       node: this.generateDSL(),
     };
+
     if (!this.isLeafNode() && this.getComponentType() !== "Icon") {
       for (const child of this.getChildren()) {
         if (tree.children === null) {
@@ -384,7 +502,7 @@ export class FigmaNode {
           children:
             child.isLeafNode() || child.getComponentType() === "Icon"
               ? null
-              : [child.getTree()],
+              : [...child.getTree().children],
           node: child.generateDSL(),
         });
       }
@@ -466,7 +584,7 @@ export class FigmaNode {
           ...dsl.props,
           ...imagePropery.props,
         },
-        imports: [...dsl.imports, { name: "Image", from: "react-native" }],
+        imports: [...dsl.imports, { inside: "Image", from: "react-native" }],
       };
     } else if (type === "Text") {
       const textProp = typography(this.node);
@@ -480,7 +598,7 @@ export class FigmaNode {
           ...dsl.props,
           ...textProp.props,
         },
-        imports: [...dsl.imports, { name: "Text", from: "react-native" }],
+        imports: [...dsl.imports, { inside: "Text", from: "react-native" }],
       };
     } else if (type === "Button") {
       return {
@@ -494,7 +612,7 @@ export class FigmaNode {
         },
         imports: [
           ...dsl.imports,
-          { name: "TouchableOpacity", from: "react-native" },
+          { inside: "TouchableOpacity", from: "react-native" },
         ],
       };
     } else if (type === "Icon") {
@@ -504,7 +622,7 @@ export class FigmaNode {
         vectorData: vectorData,
         imports: [
           ...dsl.imports,
-          { name: "Svg, { Path }", from: "react-native-svg" },
+          { outside: "Svg", inside: "Path", from: "react-native-svg" },
         ],
         props: {
           ...dsl.props,

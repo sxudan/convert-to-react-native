@@ -1,5 +1,5 @@
 import { FigmaNode } from "../../figma/nodes";
-import { ImageProps, TextProps, Tree } from "../../figma/types";
+import { ImageProps, ImportType, TextProps, Tree } from "../../figma/types";
 import { generateSVGCode } from "./react-native-svg";
 
 export const createStyleSheetArray = (tree: Tree) => {
@@ -57,7 +57,6 @@ function getImports(tree: Tree) {
     for (const child of tree.children) {
       const childImports = Array.from(getImports(child));
       imports = Array.from(new Set([...imports, ...childImports]));
-      console.log('imports', imports)
     }
   }
   return imports;
@@ -69,31 +68,32 @@ export class ReactNativeNode extends FigmaNode {
   }
 
   private createImports() {
-    const imports = getImports(this.getTree());
-    
-    const groupedImports = imports.reduce((acc, cur) => {
-      if (!acc[cur.from]) {
-        acc[cur.from] = [];
+    const defaultImports: ImportType[] = [{ outside: "React", from: "react-native" }, { inside: "View", from: "react-native" }, { inside: "StyleSheet", from: "react-native" }, { inside: "TouchableOpacity", from: "react-native" }];
+    const imports = [...getImports(this.getTree()), ...defaultImports];
+    // Group by the `from` property
+    const grouped: Record<string, { inside: Set<string>; outside: Set<string> }> = {};
+  
+    imports.forEach((imp) => {
+      const { inside, outside, from } = imp;
+  
+      if (!grouped[from]) {
+        grouped[from] = { inside: new Set(), outside: new Set() };
       }
-      acc[cur.from].push(cur.name);
-      return acc;
-    }, {});
-
-    const otherImports = Object.keys(groupedImports)
-      .filter((k) => k !== "react-native")
-      .map((k) => {
-        return `import ${groupedImports[k].join(", ")} from '${k}';`;
-      });
-      
-
-    const nativeImports = (groupedImports["react-native"] ?? []).join(
-      ", "
-    )
-
-    console.log(nativeImports)
-    return `import { View, StyleSheet, ${nativeImports} } from 'react-native';\nimport React from 'react';\n
-    ${otherImports.join("\n")}
-    `;
+  
+      if (inside) grouped[from].inside.add(inside);
+      if (outside) grouped[from].outside.add(outside);
+    });
+  
+    // Create formatted import strings
+    const result = Object.entries(grouped).map(([from, { inside, outside }]) => {
+      const insidePart = [...inside].length > 0 ? `{ ${[...inside].join(", ")} }` : "";
+      const outsidePart = [...outside].join(", ");
+      const combined = [outsidePart, insidePart].filter(Boolean).join(", ");
+  
+      return `import ${combined} from '${from}';`;
+    });
+  
+    return result.join("\n");
   }
 
   async createComponent() {

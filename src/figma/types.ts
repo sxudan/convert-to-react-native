@@ -51,6 +51,7 @@ export interface Appearance extends DimensionStyles {
   shadowRadius?: number;
   elevation?: number;
   position?: "absolute" | "relative";
+  flexDirection?: "row" | "column";
 }
 
 export type TypographyStylesTextStyles =
@@ -109,6 +110,7 @@ export interface Tree {
 
 
 export interface ImportType {
-    name: string;
+    outside?: string;
+    inside?: string;
     from: string;
 }
